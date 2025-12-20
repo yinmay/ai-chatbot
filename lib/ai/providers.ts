@@ -4,7 +4,13 @@ import {
   extractReasoningMiddleware,
   wrapLanguageModel,
 } from "ai";
+import { createDeepSeek } from "@ai-sdk/deepseek";
 import { isTestEnvironment } from "../constants";
+
+// DeepSeek provider
+const deepseek = createDeepSeek({
+  apiKey: process.env.DEEPSEEK_API_KEY || '',
+});
 
 const THINKING_SUFFIX_REGEX = /-thinking$/;
 
@@ -32,6 +38,12 @@ export function getLanguageModel(modelId: string) {
     return myProvider.languageModel(modelId);
   }
 
+  // Handle DeepSeek models directly
+  if (modelId.startsWith("deepseek/")) {
+    const deepseekModelId = modelId.replace("deepseek/", "");
+    return deepseek(deepseekModelId);
+  }
+
   const isReasoningModel =
     modelId.includes("reasoning") || modelId.endsWith("-thinking");
 
@@ -51,12 +63,12 @@ export function getTitleModel() {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("title-model");
   }
-  return gateway.languageModel("anthropic/claude-haiku-4.5");
+  return deepseek("deepseek-chat");
 }
 
 export function getArtifactModel() {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("artifact-model");
   }
-  return gateway.languageModel("anthropic/claude-haiku-4.5");
+  return deepseek("deepseek-chat");
 }

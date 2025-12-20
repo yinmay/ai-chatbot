@@ -1,5 +1,5 @@
 // Curated list of top models from Vercel AI Gateway
-export const DEFAULT_CHAT_MODEL = "google/gemini-2.5-flash-lite";
+export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-chat";
 
 export type ChatModel = {
   id: string;
@@ -54,12 +54,12 @@ export const chatModels: ChatModel[] = [
     provider: "google",
     description: "Most capable Google model",
   },
-  // xAI
+  // DeepSeek
   {
-    id: "xai/grok-4.1-fast-non-reasoning",
-    name: "Grok 4.1 Fast",
-    provider: "xai",
-    description: "Fast with 30K context",
+    id: "deepseek/deepseek-chat",
+    name: "DeepSeek Chat",
+    provider: "deepseek",
+    description: "Fast and affordable Chinese model",
   },
   // Reasoning models (extended thinking)
   {
@@ -69,10 +69,10 @@ export const chatModels: ChatModel[] = [
     description: "Extended thinking for complex problems",
   },
   {
-    id: "xai/grok-code-fast-1-thinking",
-    name: "Grok Code Fast",
+    id: "deepseek/deepseek-reasoner",
+    name: "DeepSeek Reasoner",
     provider: "reasoning",
-    description: "Reasoning optimized for code",
+    description: "Reasoning optimized for complex problems",
   },
 ];
 
