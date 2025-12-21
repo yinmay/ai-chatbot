@@ -38,6 +38,7 @@ import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
+import { base64ToText } from "@/lib/file/base64totext";
 
 export const maxDuration = 60;
 
@@ -171,10 +172,47 @@ export async function POST(request: Request) {
           selectedChatModel.includes("reasoning") ||
           selectedChatModel.includes("thinking");
 
+        // Process PDF files: convert base64 to text
+        const processedMessages = await Promise.all(
+          uiMessages.map(async (msg) => {
+            if (msg.role === "user" && msg.parts) {
+              const processedParts = await Promise.all(
+                msg.parts.map(async (part: any) => {
+                  if (
+                    part.type === "file" &&
+                    (part.mediaType === "application/pdf" ||
+                      part.name?.toLowerCase().endsWith(".pdf"))
+                  ) {
+                    try {
+                      // Extract text from PDF
+                      const pdfText = await base64ToText(part.url);
+                      // Replace file part with text part containing PDF content
+                      return {
+                        type: "text" as const,
+                        text: `[PDF文件: ${part.name}]\n\n${pdfText}`,
+                      };
+                    } catch (error) {
+                      console.error("Error processing PDF:", error);
+                      // If extraction fails, return error message
+                      return {
+                        type: "text" as const,
+                        text: `[PDF文件: ${part.name}] - 无法解析PDF内容`,
+                      };
+                    }
+                  }
+                  return part;
+                })
+              );
+              return { ...msg, parts: processedParts };
+            }
+            return msg;
+          })
+        );
+
         const result = streamText({
           model: getLanguageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
-          messages: await convertToModelMessages(uiMessages),
+          messages: await convertToModelMessages(processedMessages),
           stopWhen: stepCountIs(5),
           experimental_activeTools: isReasoningModel
             ? []

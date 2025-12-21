@@ -7,9 +7,16 @@ const textPartSchema = z.object({
 
 const filePartSchema = z.object({
   type: z.enum(["file"]),
-  mediaType: z.enum(["image/jpeg", "image/png"]),
+  mediaType: z.enum([
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "application/pdf",
+  ]),
   name: z.string().min(1).max(100),
-  url: z.string().url(),
+  url: z.string().min(1), // Changed from .url() to accept base64 data URIs
+  data: z.string().optional(), // Optional data field for base64 content
 });
 
 const partSchema = z.union([textPartSchema, filePartSchema]);

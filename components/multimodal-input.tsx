@@ -152,9 +152,10 @@ function PureMultimodalInput({
       parts: [
         ...attachments.map((attachment) => ({
           type: "file" as const,
-          url: attachment.url,
+          url: attachment.url, // base64 string
           name: attachment.name,
           mediaType: attachment.contentType,
+          data: attachment.url, // also pass as data for compatibility
         })),
         {
           type: "text",
@@ -183,117 +184,145 @@ function PureMultimodalInput({
     resetHeight,
   ]);
 
-  const uploadFile = useCallback(async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await fetch("/api/files/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
-
-        return {
-          url,
-          name: pathname,
-          contentType,
-        };
-      }
-      const { error } = await response.json();
-      toast.error(error);
-    } catch (_error) {
-      toast.error("Failed to upload file, please try again!");
-    }
+  // Read file as base64 string
+  const readFileAsBase64 = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        resolve(base64String);
+      };
+      reader.onerror = () => {
+        reject(new Error("Failed to read file"));
+      };
+      reader.readAsDataURL(file);
+    });
   }, []);
 
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
 
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const oversizedFiles = files.filter((file) => file.size > maxSize);
+      if (oversizedFiles.length > 0) {
+        toast.error(
+          `File too large: ${oversizedFiles[0].name}. Maximum size is 10MB.`
+        );
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        return;
+      }
+
+      // Validate file type (images and PDFs only)
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/pdf",
+      ];
+      const invalidFiles = files.filter(
+        (file) => !allowedTypes.includes(file.type)
+      );
+      if (invalidFiles.length > 0) {
+        toast.error(
+          `Unsupported file type: ${invalidFiles[0].name}. Only images (JPEG, PNG, GIF, WebP) and PDFs are allowed.`
+        );
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        return;
+      }
+
       setUploadQueue(files.map((file) => file.name));
 
       try {
-        const uploadPromises = files.map((file) => uploadFile(file));
-        const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) => attachment !== undefined
-        );
+        const base64Promises = files.map(async (file) => {
+          const base64String = await readFileAsBase64(file);
+          return {
+            url: base64String,
+            name: file.name,
+            contentType: file.type,
+          };
+        });
+
+        const base64Attachments = await Promise.all(base64Promises);
 
         setAttachments((currentAttachments) => [
           ...currentAttachments,
-          ...successfullyUploadedAttachments,
+          ...base64Attachments,
         ]);
       } catch (error) {
-        console.error("Error uploading files!", error);
+        console.error("Error reading files!", error);
+        toast.error("Failed to read file, please try again!");
       } finally {
         setUploadQueue([]);
       }
     },
-    [setAttachments, uploadFile]
+    [setAttachments, readFileAsBase64]
   );
 
-  const handlePaste = useCallback(
-    async (event: ClipboardEvent) => {
-      const items = event.clipboardData?.items;
-      if (!items) {
-        return;
-      }
+  // const handlePaste = useCallback(
+  //   async (event: ClipboardEvent) => {
+  //     const items = event.clipboardData?.items;
+  //     if (!items) {
+  //       return;
+  //     }
 
-      const imageItems = Array.from(items).filter((item) =>
-        item.type.startsWith("image/")
-      );
+  //     const imageItems = Array.from(items).filter((item) =>
+  //       item.type.startsWith("image/")
+  //     );
 
-      if (imageItems.length === 0) {
-        return;
-      }
+  //     if (imageItems.length === 0) {
+  //       return;
+  //     }
 
-      // Prevent default paste behavior for images
-      event.preventDefault();
+  //     // Prevent default paste behavior for images
+  //     event.preventDefault();
 
-      setUploadQueue((prev) => [...prev, "Pasted image"]);
+  //     setUploadQueue((prev) => [...prev, "Pasted image"]);
 
-      try {
-        const uploadPromises = imageItems
-          .map((item) => item.getAsFile())
-          .filter((file): file is File => file !== null)
-          .map((file) => uploadFile(file));
+  //     try {
+  //       const uploadPromises = imageItems
+  //         .map((item) => item.getAsFile())
+  //         .filter((file): file is File => file !== null)
+  //         .map((file) => uploadFile(file));
 
-        const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) =>
-            attachment !== undefined &&
-            attachment.url !== undefined &&
-            attachment.contentType !== undefined
-        );
+  //       const uploadedAttachments = await Promise.all(uploadPromises);
+  //       const successfullyUploadedAttachments = uploadedAttachments.filter(
+  //         (attachment) =>
+  //           attachment !== undefined &&
+  //           attachment.url !== undefined &&
+  //           attachment.contentType !== undefined
+  //       );
 
-        setAttachments((curr) => [
-          ...curr,
-          ...(successfullyUploadedAttachments as Attachment[]),
-        ]);
-      } catch (error) {
-        console.error("Error uploading pasted images:", error);
-        toast.error("Failed to upload pasted image(s)");
-      } finally {
-        setUploadQueue([]);
-      }
-    },
-    [setAttachments, uploadFile]
-  );
+  //       setAttachments((curr) => [
+  //         ...curr,
+  //         ...(successfullyUploadedAttachments as Attachment[]),
+  //       ]);
+  //     } catch (error) {
+  //       console.error("Error uploading pasted images:", error);
+  //       toast.error("Failed to upload pasted image(s)");
+  //     } finally {
+  //       setUploadQueue([]);
+  //     }
+  //   },
+  //   [setAttachments, uploadFile]
+  // );
 
   // Add paste event listener to textarea
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      return;
-    }
+  // useEffect(() => {
+  //   const textarea = textareaRef.current;
+  //   if (!textarea) {
+  //     return;
+  //   }
 
-    textarea.addEventListener("paste", handlePaste);
-    return () => textarea.removeEventListener("paste", handlePaste);
-  }, [handlePaste]);
+  //   textarea.addEventListener("paste", handlePaste);
+  //   return () => textarea.removeEventListener("paste", handlePaste);
+  // }, [handlePaste]);
 
   return (
     <div className={cn("relative flex w-full flex-col gap-4", className)}>
@@ -308,8 +337,9 @@ function PureMultimodalInput({
         )}
 
       <input
+        accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
         className="-top-4 -left-4 pointer-events-none fixed size-0.5 opacity-0"
-        multiple
+        // multiple
         onChange={handleFileChange}
         ref={fileInputRef}
         tabIndex={-1}
