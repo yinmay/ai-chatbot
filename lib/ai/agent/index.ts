@@ -1,19 +1,6 @@
-import {
-  convertToModelMessages,
-  createUIMessageStream,
-  smoothStream,
-  stepCountIs,
-  streamText,
-  type UIDataStreamWriter,
-} from "ai";
+import { createUIMessageStream } from "ai";
 import type { Session } from "next-auth";
-import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
-import { getLanguageModel } from "@/lib/ai/providers";
-import { createDocument } from "@/lib/ai/tools/create-document";
-import { getWeather } from "@/lib/ai/tools/get-weather";
-import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
-import { updateDocument } from "@/lib/ai/tools/update-document";
-import { isProductionEnvironment } from "@/lib/constants";
+import type { RequestHints } from "@/lib/ai/prompts";
 import {
   saveMessages,
   updateChatTitleById,
@@ -21,9 +8,18 @@ import {
 } from "@/lib/db/queries";
 import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
+import { executeStreamText } from "./common";
 
 // Re-export user intent classification
 export { classifyUserIntent, userIntentSchema, type UserIntent } from "./classify";
+// Import for internal use
+import { classifyUserIntent } from "./classify";
+
+// Re-export resume optimization agent
+export { resumeOptimizationAgent } from "./resume-opt";
+
+// Re-export mock interview agent
+export { mockInterviewAgent } from "./mock-interview";
 
 export type CreateChatStreamOptions = {
   chatId: string;
@@ -59,13 +55,38 @@ export function createChatStream({
         });
       }
 
-      const result = await executeStreamText({
-        selectedChatModel,
-        requestHints,
-        uiMessages,
-        session,
-        dataStream,
-      });
+      // Classify user intent first
+      const userIntent = await classifyUserIntent(uiMessages, selectedChatModel);
+
+      let result;
+
+      // Route to appropriate agent based on intent
+      if (userIntent.intent === "resume_opt") {
+        // Use resume optimization agent
+        const { resumeOptimizationAgent } = await import("./resume-opt");
+        result = await resumeOptimizationAgent(
+          uiMessages,
+          selectedChatModel,
+          session
+        );
+      } else if (userIntent.intent === "mock_interview") {
+        // Use mock interview agent
+        const { mockInterviewAgent } = await import("./mock-interview");
+        result = await mockInterviewAgent(
+          uiMessages,
+          selectedChatModel,
+          session
+        );
+      } else {
+        // Use default chat stream for related_topics and others
+        result = await executeStreamText({
+          selectedChatModel,
+          requestHints,
+          uiMessages,
+          session,
+          dataStream,
+        });
+      }
 
       result.consumeStream();
 
@@ -90,65 +111,6 @@ export function createChatStream({
   });
 
   return stream;
-}
-
-/**
- * Executes the streamText with proper configuration
- */
-async function executeStreamText({
-  selectedChatModel,
-  requestHints,
-  uiMessages,
-  session,
-  dataStream,
-}: {
-  selectedChatModel: string;
-  requestHints: RequestHints;
-  uiMessages: ChatMessage[];
-  session: Session;
-  dataStream: UIDataStreamWriter;
-}) {
-  const isReasoningModel =
-    selectedChatModel.includes("reasoning") ||
-    selectedChatModel.includes("thinking");
-
-  return streamText({
-    model: getLanguageModel(selectedChatModel),
-    system: systemPrompt({ selectedChatModel, requestHints }),
-    messages: await convertToModelMessages(uiMessages),
-    stopWhen: stepCountIs(5),
-    experimental_activeTools: isReasoningModel
-      ? []
-      : [
-          "getWeather",
-          "createDocument",
-          "updateDocument",
-          "requestSuggestions",
-        ],
-    experimental_transform: isReasoningModel
-      ? undefined
-      : smoothStream({ chunking: "word" }),
-    providerOptions: isReasoningModel
-      ? {
-          anthropic: {
-            thinking: { type: "enabled", budgetTokens: 10_000 },
-          },
-        }
-      : undefined,
-    tools: {
-      getWeather,
-      createDocument: createDocument({ session, dataStream }),
-      updateDocument: updateDocument({ session, dataStream }),
-      requestSuggestions: requestSuggestions({
-        session,
-        dataStream,
-      }),
-    },
-    experimental_telemetry: {
-      isEnabled: isProductionEnvironment,
-      functionId: "stream-text",
-    },
-  });
 }
 
 /**
