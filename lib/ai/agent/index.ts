@@ -22,6 +22,9 @@ import {
 import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
 
+// Re-export user intent classification
+export { classifyUserIntent, userIntentSchema, type UserIntent } from "./classify";
+
 export type CreateChatStreamOptions = {
   chatId: string;
   selectedChatModel: string;
