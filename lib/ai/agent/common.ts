@@ -13,6 +13,7 @@ import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import { isProductionEnvironment } from "@/lib/constants";
+import { saveMessages, updateMessage } from "@/lib/db/queries";
 import type { ChatMessage } from "@/lib/types";
 
 /**
@@ -72,4 +73,59 @@ export async function executeStreamText({
       functionId: "stream-text",
     },
   });
+}
+
+/**
+ * Handles saving finished messages to database
+ */
+export async function handleFinishedMessages({
+  finishedMessages,
+  uiMessages,
+  chatId,
+  isToolApprovalFlow,
+}: {
+  finishedMessages: ChatMessage[];
+  uiMessages: ChatMessage[];
+  chatId: string;
+  isToolApprovalFlow: boolean;
+}) {
+  if (isToolApprovalFlow) {
+    // For tool approval, update existing messages (tool state changed) and save new ones
+    for (const finishedMsg of finishedMessages) {
+      const existingMsg = uiMessages.find((m) => m.id === finishedMsg.id);
+      if (existingMsg) {
+        // Update existing message with new parts (tool state changed)
+        await updateMessage({
+          id: finishedMsg.id,
+          parts: finishedMsg.parts,
+        });
+      } else {
+        // Save new message
+        await saveMessages({
+          messages: [
+            {
+              id: finishedMsg.id,
+              role: finishedMsg.role,
+              parts: finishedMsg.parts,
+              createdAt: new Date(),
+              attachments: [],
+              chatId,
+            },
+          ],
+        });
+      }
+    }
+  } else if (finishedMessages.length > 0) {
+    // Normal flow - save all finished messages
+    await saveMessages({
+      messages: finishedMessages.map((currentMessage) => ({
+        id: currentMessage.id,
+        role: currentMessage.role,
+        parts: currentMessage.parts,
+        createdAt: new Date(),
+        attachments: [],
+        chatId,
+      })),
+    });
+  }
 }

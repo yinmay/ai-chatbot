@@ -141,7 +141,7 @@ export async function POST(request: Request) {
     const streamId = generateUUID();
     await createStreamId({ streamId, chatId: id });
 
-    const stream = createChatStream({
+    const stream = await createChatStream({
       chatId: id,
       selectedChatModel,
       requestHints,
