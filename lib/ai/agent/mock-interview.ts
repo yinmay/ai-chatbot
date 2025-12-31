@@ -1,4 +1,4 @@
-import { createUIMessageStream, streamText } from "ai";
+import { createUIMessageStream, smoothStream, streamText } from "ai";
 import type { Session } from "next-auth";
 import { getLanguageModel } from "@/lib/ai/providers";
 import type { ChatMessage } from "@/lib/types";
@@ -115,6 +115,67 @@ const MOCK_INTERVIEW_PROMPT = `你是一位互联网大厂的资深前端技术�
 When asked to write, create, or help with something, just do it directly. Don't ask clarifying questions unless absolutely necessary - make reasonable assumptions and proceed with the task.`;
 
 /**
+ * Execute mock interview stream (for use inside createUIMessageStream)
+ */
+export async function executeMockInterviewStream(
+  messages: ChatMessage[],
+  selectedChatModel: string,
+  dataStream: Parameters<Parameters<typeof createUIMessageStream>[0]["execute"]>[0]["writer"]
+) {
+  const userMessages = messages.filter((m) => m.role === "user");
+  const isFirstMessage = userMessages.length <= 1;
+
+  let result;
+
+  if (isFirstMessage) {
+    result = streamText({
+      model: getLanguageModel(selectedChatModel) as any,
+      system: MOCK_INTERVIEW_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: "我想进行前端技术面试模拟",
+        },
+        {
+          role: "assistant",
+          content:
+            "你好！欢迎参加今天的前端技术面试。我是你的面试官，很高兴见到你。\n\n在开始之前，我想先了解一下你的情况：\n\n1. 你目前的技术栈主要是什么？（如 React、Vue 等）\n2. 你有多久的前端开发经验？\n3. 你期望面试什么级别的岗位？（初级/中级/高级）\n\n了解这些信息后，我会针对性地准备面试问题。请放轻松，把这当作一次真实的面试体验。",
+        },
+        {
+          role: "user",
+          content: messages[messages.length - 1]?.parts
+            .filter((part) => part.type === "text")
+            .map((part) => ("text" in part ? part.text : ""))
+            .join(" ") || "",
+        },
+      ],
+      experimental_transform: smoothStream({ chunking: "word" }),
+    });
+  } else {
+    result = streamText({
+      model: getLanguageModel(selectedChatModel) as any,
+      system: MOCK_INTERVIEW_PROMPT,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.parts
+          .filter((part) => part.type === "text")
+          .map((part) => ("text" in part ? part.text : ""))
+          .join(" "),
+      })),
+      experimental_transform: smoothStream({ chunking: "word" }),
+    });
+  }
+
+  result.consumeStream();
+
+  dataStream.merge(
+    result.toUIMessageStream({
+      sendReasoning: true,
+    })
+  );
+}
+
+/**
  * Mock interview AI agent
  *
  * This agent simulates a technical interview for programmers.
@@ -158,6 +219,7 @@ export function mockInterviewAgent(
                 .join(" ") || "",
             },
           ],
+          experimental_transform: smoothStream({ chunking: "word" }),
         });
       } else {
         // Continue the interview conversation
@@ -171,6 +233,7 @@ export function mockInterviewAgent(
               .map((part) => ("text" in part ? part.text : ""))
               .join(" "),
           })),
+          experimental_transform: smoothStream({ chunking: "word" }),
         });
       }
 

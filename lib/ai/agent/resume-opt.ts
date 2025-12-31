@@ -1,4 +1,4 @@
-import { createUIMessageStream, streamText } from "ai";
+import { createUIMessageStream, smoothStream, streamText } from "ai";
 import type { Session } from "next-auth";
 import { z } from "zod";
 import { getLanguageModel } from "@/lib/ai/providers";
@@ -265,6 +265,69 @@ const evaluateSkillsTool = {
 };
 
 /**
+ * Execute resume optimization stream (for use inside createUIMessageStream)
+ */
+export async function executeResumeOptStream(
+  messages: ChatMessage[],
+  selectedChatModel: string,
+  dataStream: Parameters<Parameters<typeof createUIMessageStream>[0]["execute"]>[0]["writer"]
+) {
+  const hasResume = hasResumeContent(messages);
+
+  let result;
+
+  if (!hasResume) {
+    result = streamText({
+      model: getLanguageModel(selectedChatModel) as any,
+      system: RESUME_OPT_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: "我想优化简历",
+        },
+        {
+          role: "assistant",
+          content:
+            "你好！我是专业的简历优化顾问，很高兴帮你优化技术简历。\n\n为了给你提供最有针对性的建议，请把你的简历内容发给我。你可以直接粘贴简历文本，我会帮你：\n\n1. 优化项目经历的描述方式\n2. 突出技术亮点和核心贡献\n3. 用量化数据展示你的成果\n4. 调整技术栈的呈现方式\n5. 提供具体的优化建议\n\n请发送你的简历内容吧！",
+        },
+        {
+          role: "user",
+          content: messages[messages.length - 1]?.parts
+            .filter((part) => part.type === "text")
+            .map((part) => ("text" in part ? part.text : ""))
+            .join(" ") || "",
+        },
+      ],
+      experimental_transform: smoothStream({ chunking: "word" }),
+    });
+  } else {
+    result = streamText({
+      model: getLanguageModel(selectedChatModel) as any,
+      system: RESUME_OPT_PROMPT,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.parts
+          .filter((part) => part.type === "text")
+          .map((part) => ("text" in part ? part.text : ""))
+          .join(" "),
+      })),
+      tools: {
+        evaluateSkills: evaluateSkillsTool,
+      },
+      experimental_transform: smoothStream({ chunking: "word" }),
+    });
+  }
+
+  result.consumeStream();
+
+  dataStream.merge(
+    result.toUIMessageStream({
+      sendReasoning: true,
+    })
+  );
+}
+
+/**
  * Check if messages contain resume content
  */
 function hasResumeContent(messages: ChatMessage[]): boolean {
@@ -327,6 +390,7 @@ export function resumeOptimizationAgent(
                 .join(" ") || "",
             },
           ],
+          experimental_transform: smoothStream({ chunking: "word" }),
         });
       } else {
         // If has resume content, provide optimization with tools
@@ -343,6 +407,7 @@ export function resumeOptimizationAgent(
           tools: {
             evaluateSkills: evaluateSkillsTool,
           },
+          experimental_transform: smoothStream({ chunking: "word" }),
         });
       }
 

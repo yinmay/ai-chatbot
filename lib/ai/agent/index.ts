@@ -27,10 +27,15 @@ export type CreateChatStreamOptions = {
   titlePromise?: Promise<string> | null;
 };
 
+// Import execute functions
+import { executeResumeOptStream } from "./resume-opt";
+import { executeMockInterviewStream } from "./mock-interview";
+
 /**
  * Creates an AI chat stream with message handling
+ * Returns a stream immediately and performs classification inside the stream
  */
-export async function createChatStream({
+export function createChatStream({
   chatId,
   selectedChatModel,
   requestHints,
@@ -46,50 +51,37 @@ export async function createChatStream({
     });
   }
 
-  // Classify user intent first
-  const userIntent = await classifyUserIntent(uiMessages, selectedChatModel);
-
-  // Route to appropriate agent based on intent
-  if (userIntent.intent === "resume_opt") {
-    // Use resume optimization agent
-    const { resumeOptimizationAgent } = await import("./resume-opt");
-    return resumeOptimizationAgent(
-      uiMessages,
-      selectedChatModel,
-      session,
-      chatId
-    );
-  } else if (userIntent.intent === "mock_interview") {
-    // Use mock interview agent
-    const { mockInterviewAgent } = await import("./mock-interview");
-    return mockInterviewAgent(
-      uiMessages,
-      selectedChatModel,
-      session,
-      chatId
-    );
-  }
-
-  // Use default chat stream for related_topics and others
+  // Return stream immediately - classification happens inside execute
   const stream = createUIMessageStream({
     // Pass original messages for tool approval continuation
     originalMessages: isToolApprovalFlow ? uiMessages : undefined,
     execute: async ({ writer: dataStream }) => {
-      const result = await executeStreamText({
-        selectedChatModel,
-        requestHints,
-        uiMessages,
-        session,
-        dataStream,
-      });
+      // Classify user intent inside the stream execution
+      const userIntent = await classifyUserIntent(uiMessages, selectedChatModel);
 
-      result.consumeStream();
+      // Route to appropriate agent based on intent
+      if (userIntent.intent === "resume_opt") {
+        await executeResumeOptStream(uiMessages, selectedChatModel, dataStream);
+      } else if (userIntent.intent === "mock_interview") {
+        await executeMockInterviewStream(uiMessages, selectedChatModel, dataStream);
+      } else {
+        // Use default chat stream for related_topics and others
+        const result = await executeStreamText({
+          selectedChatModel,
+          requestHints,
+          uiMessages,
+          session,
+          dataStream,
+        });
 
-      dataStream.merge(
-        result.toUIMessageStream({
-          sendReasoning: true,
-        })
-      );
+        result.consumeStream();
+
+        dataStream.merge(
+          result.toUIMessageStream({
+            sendReasoning: true,
+          })
+        );
+      }
     },
     generateId: generateUUID,
     onFinish: async ({ messages: finishedMessages }) => {
