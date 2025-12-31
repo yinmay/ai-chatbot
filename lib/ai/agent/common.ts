@@ -3,7 +3,7 @@ import {
   smoothStream,
   stepCountIs,
   streamText,
-  type UIDataStreamWriter,
+  type UIMessageStreamWriter,
 } from "ai";
 import type { Session } from "next-auth";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
@@ -30,7 +30,7 @@ export async function executeStreamText({
   requestHints: RequestHints;
   uiMessages: ChatMessage[];
   session: Session;
-  dataStream: UIDataStreamWriter;
+  dataStream: UIMessageStreamWriter<ChatMessage>;
 }) {
   const isReasoningModel =
     selectedChatModel.includes("reasoning") ||
