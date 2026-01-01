@@ -1,8 +1,8 @@
-# AI Career Assistant - Project Description
+# RenderMe - Project Description
 
 ## 项目概述
 
-AI Career Assistant 是一个基于 AI 的智能职业助手，专门为前端开发者提供简历优化和技术面试准备服务。通过先进的 AI 技术和专业的面试经验，帮助求职者提升简历质量和面试表现。
+RenderMe 是一个基于 AI 的智能职业助手，专门为前端开发者提供简历优化和技术面试准备服务。通过先进的 AI 技术和专业的面试经验，帮助求职者提升简历质量和面试表现。
 
 ## 核心功能
 

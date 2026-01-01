@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI Career Assistant - An intelligent AI assistant for frontend developers providing resume optimization and technical interview preparation. Built with Next.js 16 (App Router), React 19, and Vercel AI SDK.
+RenderMe - An intelligent AI assistant for frontend developers providing resume optimization and technical interview preparation. Built with Next.js 16 (App Router), React 19, and Vercel AI SDK.
 
 ## Commands
 
