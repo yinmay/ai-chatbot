@@ -4,18 +4,28 @@ import { z } from "zod";
 
 import { auth } from "@/app/(auth)/auth";
 
+// Allowed file types
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+
 // Use Blob instead of File since File is not available in Node.js environment
 const FileSchema = z.object({
   file: z
     .instanceof(Blob)
-    .refine((file) => file.size <= 5 * 1024 * 1024, {
-      message: "File size should be less than 5MB",
+    .refine((file) => file.size <= 10 * 1024 * 1024, {
+      message: "File size should be less than 10MB",
     })
-    // Update the file type based on the kind of files you want to accept
-    .refine((file) => ["image/jpeg", "image/png"].includes(file.type), {
-      message: "File type should be JPEG or PNG",
+    .refine((file) => ALLOWED_FILE_TYPES.includes(file.type), {
+      message: "File type should be JPEG, PNG, or PDF",
     }),
 });
+
+// Check if we should use base64 data URL (when Vercel Blob token is not available)
+const useBase64 = !process.env.BLOB_READ_WRITE_TOKEN;
+
+function toBase64DataUrl(buffer: ArrayBuffer, contentType: string): string {
+  const base64 = Buffer.from(buffer).toString("base64");
+  return `data:${contentType};base64,${base64}`;
+}
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -51,12 +61,24 @@ export async function POST(request: Request) {
     const fileBuffer = await file.arrayBuffer();
 
     try {
+      if (useBase64) {
+        // Use base64 data URL for development (no external storage needed)
+        const dataUrl = toBase64DataUrl(fileBuffer, file.type);
+        return NextResponse.json({
+          url: dataUrl,
+          pathname: filename,
+          contentType: file.type,
+        });
+      }
+
+      // Use Vercel Blob for production
       const data = await put(`${filename}`, fileBuffer, {
         access: "public",
       });
 
       return NextResponse.json(data);
-    } catch (_error) {
+    } catch (error) {
+      console.error("Upload error:", error);
       return NextResponse.json({ error: "Upload failed" }, { status: 500 });
     }
   } catch (_error) {

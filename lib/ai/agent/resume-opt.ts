@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getLanguageModel } from "@/lib/ai/providers";
 import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
-import { handleFinishedMessages } from "./common";
+import { handleFinishedMessages, processMessagesWithPDF } from "./common";
 
 /**
  * System prompt for resume optimization
@@ -272,7 +272,9 @@ export async function executeResumeOptStream(
   selectedChatModel: string,
   dataStream: Parameters<Parameters<typeof createUIMessageStream>[0]["execute"]>[0]["writer"]
 ) {
-  const hasResume = hasResumeContent(messages);
+  // Process PDF attachments (important for resume PDFs)
+  const processedMessages = await processMessagesWithPDF(messages);
+  const hasResume = hasResumeContent(processedMessages);
 
   let result;
 
@@ -288,11 +290,11 @@ export async function executeResumeOptStream(
         {
           role: "assistant",
           content:
-            "你好！我是专业的简历优化顾问，很高兴帮你优化技术简历。\n\n为了给你提供最有针对性的建议，请把你的简历内容发给我。你可以直接粘贴简历文本，我会帮你：\n\n1. 优化项目经历的描述方式\n2. 突出技术亮点和核心贡献\n3. 用量化数据展示你的成果\n4. 调整技术栈的呈现方式\n5. 提供具体的优化建议\n\n请发送你的简历内容吧！",
+            "你好！我是专业的简历优化顾问，很高兴帮你优化技术简历。\n\n为了给你提供最有针对性的建议，请把你的简历内容发给我。你可以直接粘贴简历文本，或者上传PDF格式的简历，我会帮你：\n\n1. 优化项目经历的描述方式\n2. 突出技术亮点和核心贡献\n3. 用量化数据展示你的成果\n4. 调整技术栈的呈现方式\n5. 提供具体的优化建议\n\n请发送你的简历内容吧！",
         },
         {
           role: "user",
-          content: messages[messages.length - 1]?.parts
+          content: processedMessages[processedMessages.length - 1]?.parts
             .filter((part) => part.type === "text")
             .map((part) => ("text" in part ? part.text : ""))
             .join(" ") || "",
@@ -304,7 +306,7 @@ export async function executeResumeOptStream(
     result = streamText({
       model: getLanguageModel(selectedChatModel) as any,
       system: RESUME_OPT_PROMPT,
-      messages: messages.map((msg) => ({
+      messages: processedMessages.map((msg) => ({
         role: msg.role,
         content: msg.parts
           .filter((part) => part.type === "text")
