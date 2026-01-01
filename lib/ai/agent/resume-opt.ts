@@ -167,12 +167,16 @@ When asked to write, create, or help with something, just do it directly. Don't 
 
 /**
  * Execute resume optimization stream (for use inside createUIMessageStream)
+ * When PDF is uploaded, uses deep thinking mode for more thorough analysis
  */
 export async function executeResumeOptStream(
   messages: ChatMessage[],
   selectedChatModel: string,
   dataStream: Parameters<Parameters<typeof createUIMessageStream>[0]["execute"]>[0]["writer"]
 ) {
+  // Check if PDF is uploaded - use deep thinking mode for PDF resumes
+  const hasPDF = hasPDFAttachment(messages);
+
   // Process PDF attachments (important for resume PDFs)
   const processedMessages = await processMessagesWithPDF(messages);
   const hasResume = hasResumeContent(processedMessages);
@@ -203,7 +207,22 @@ export async function executeResumeOptStream(
       ],
       experimental_transform: smoothStream({ chunking: "word" }),
     });
+  } else if (hasPDF) {
+    // PDF uploaded: Use deep thinking model for thorough analysis
+    result = streamText({
+      model: getLanguageModel("deepseek/deepseek-reasoner") as any,
+      system: RESUME_OPT_PROMPT,
+      messages: processedMessages.map((msg) => ({
+        role: msg.role,
+        content: msg.parts
+          .filter((part) => part.type === "text")
+          .map((part) => ("text" in part ? part.text : ""))
+          .join(" "),
+      })),
+      // Deep thinking models don't support tools
+    });
   } else {
+    // Regular text resume: use selected model with tools
     result = streamText({
       model: getLanguageModel(selectedChatModel) as any,
       system: RESUME_OPT_PROMPT,
@@ -250,6 +269,24 @@ function hasResumeContent(messages: ChatMessage[]): boolean {
     }
   }
 
+  return false;
+}
+
+/**
+ * Check if messages contain PDF attachments
+ */
+function hasPDFAttachment(messages: ChatMessage[]): boolean {
+  for (const message of messages) {
+    for (const part of message.parts) {
+      if (
+        part.type === "file" &&
+        "mediaType" in part &&
+        part.mediaType === "application/pdf"
+      ) {
+        return true;
+      }
+    }
+  }
   return false;
 }
 

@@ -116,8 +116,38 @@ export const evaluateSkillsTool = {
       summary = "技能列表需要较大幅度优化。";
     }
 
+    // 生成评分理由
+    const reasons: string[] = [];
+    reasons.push(`工作经验: ${yearsOfExperience} 年`);
+    reasons.push(`技能数量: ${skillCount} 个 (期望 ${expectedSkillCount} 个)`);
+    if (skillCount >= expectedSkillCount) {
+      reasons.push("✓ 技能数量达标 (+2分)");
+    } else if (skillCount >= expectedSkillCount * 0.7) {
+      reasons.push("△ 技能数量接近达标 (+1分)");
+    } else {
+      reasons.push("✗ 技能数量不足 (+0分)");
+    }
+    if (yearsOfExperience >= 3) {
+      reasons.push("✓ 资深开发者经验加成 (+2分)");
+    } else if (yearsOfExperience >= 1) {
+      reasons.push("△ 初级开发者经验加成 (+1.5分)");
+    } else {
+      reasons.push("△ 应届生基础分 (+1分)");
+    }
+    if (!hasWeakTerms) {
+      reasons.push("✓ 无弱描述词 (+0.5分)");
+    } else {
+      reasons.push("✗ 存在弱描述词如'了解' (+0分)");
+    }
+    if (hasModernTech) {
+      reasons.push("✓ 包含现代技术栈 (+0.5分)");
+    } else {
+      reasons.push("✗ 缺少现代技术栈 (+0分)");
+    }
+
     return {
       score: Math.round(score * 10) / 10, // 保留一位小数
+      reason: reasons.join("\n"), // 评分理由
       yearsOfExperience,
       skillCount,
       expectedSkillCount,

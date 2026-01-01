@@ -95,3 +95,48 @@ Required (see `.env.example`):
 - `REDIS_URL` - For resumable streams
 - `BLOB_READ_WRITE_TOKEN` - Vercel Blob
 - `AI_GATEWAY_API_KEY` or `DEEPSEEK_API_KEY` - AI provider keys
+
+## Development Workflow
+
+### Progress Tracking
+
+项目使用 `progress.md` 和 `feature_list.json` 跟踪开发进度。
+
+**每次开发任务完成后必须:**
+
+1. **更新 progress.md**
+   - 将完成的功能从"待开发"移到"已完成"
+   - 勾选对应的测试用例 `[x]`
+   - 在"更新日志"中添加变更记录
+
+2. **更新 feature_list.json**
+   - **只能**将对应测试用例的 `status` 从 `"failed"` 改为 `"passed"`
+   - **只能**更新 `summary` 中的统计数据
+   - **禁止**修改功能列表的内容（功能名称、描述、测试步骤等）
+   - **禁止**添加或删除功能/测试用例
+
+3. **执行测试验证**
+   - 按照 feature_list.json 中的测试步骤手动验证功能
+   - 确保功能正常工作后再标记为完成
+
+### 示例更新流程
+
+```bash
+# 1. 实现功能
+# 2. 启动开发服务器测试
+pnpm run dev
+
+# 3. 按测试步骤验证功能
+# 4. 更新 progress.md 和 feature_list.json
+# 5. 提交代码
+git add .
+git commit -m "feat: implement feature X"
+```
+
+### 文件说明
+
+| 文件 | 用途 |
+|------|------|
+| `progress.md` | 人类可读的进度跟踪，包含更新日志 |
+| `feature_list.json` | 结构化的功能和测试用例定义 |
+| `init.sh` | 开发环境初始化脚本 |
