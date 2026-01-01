@@ -1,0 +1,495 @@
+{
+  "project": "RenderMe",
+  "version": "3.1.0",
+  "lastUpdated": "2026-01-01",
+  "features": [
+    {
+      "id": "F001",
+      "name": "用户认证",
+      "description": "用户登录和会话管理",
+      "category": "auth",
+      "testCases": [
+        {
+          "id": "F001-T001",
+          "name": "访客登录",
+          "steps": [
+            "打开应用首页",
+            "系统自动创建访客会话",
+            "验证用户可以开始对话"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F001-T002",
+          "name": "会话持久化",
+          "steps": [
+            "登录后刷新页面",
+            "验证会话仍然有效",
+            "验证聊天历史保留"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F002",
+      "name": "聊天功能",
+      "description": "基础聊天和消息处理",
+      "category": "chat",
+      "testCases": [
+        {
+          "id": "F002-T001",
+          "name": "发送文本消息",
+          "steps": [
+            "在输入框输入文本",
+            "点击发送按钮",
+            "验证消息显示在聊天区域",
+            "验证AI响应正常返回"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F002-T002",
+          "name": "流式响应显示",
+          "steps": [
+            "发送一条消息",
+            "观察AI响应是否逐字显示",
+            "验证不是一次性全部显示"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F002-T003",
+          "name": "聊天历史记录",
+          "steps": [
+            "创建多个对话",
+            "在侧边栏查看历史记录",
+            "点击历史记录切换对话",
+            "验证对话内容正确加载"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F002-T004",
+          "name": "新建对话",
+          "steps": [
+            "点击新建对话按钮",
+            "验证进入空白对话界面",
+            "发送消息验证新对话正常工作"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F002-T005",
+          "name": "删除对话",
+          "steps": [
+            "在历史记录中选择一个对话",
+            "点击删除按钮",
+            "确认删除",
+            "验证对话从列表中移除"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F003",
+      "name": "意图分类",
+      "description": "自动识别用户意图并路由到对应Agent",
+      "category": "ai",
+      "testCases": [
+        {
+          "id": "F003-T001",
+          "name": "识别简历优化意图",
+          "steps": [
+            "发送消息：'帮我优化简历'",
+            "验证系统识别为resume_opt意图",
+            "验证路由到简历优化Agent"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F003-T002",
+          "name": "识别模拟面试意图",
+          "steps": [
+            "发送消息：'我想模拟面试'",
+            "验证系统识别为mock_interview意图",
+            "验证路由到模拟面试Agent"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F003-T003",
+          "name": "识别技术问答意图",
+          "steps": [
+            "发送消息：'什么是React Hooks?'",
+            "验证系统识别为related_topics意图",
+            "验证使用通用聊天Agent回答"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F004",
+      "name": "简历优化Agent",
+      "description": "专业的简历评审和优化建议",
+      "category": "agent",
+      "testCases": [
+        {
+          "id": "F004-T001",
+          "name": "请求简历内容",
+          "steps": [
+            "发送：'帮我优化简历'",
+            "验证Agent提示用户提供简历内容"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F004-T002",
+          "name": "简历文本分析",
+          "steps": [
+            "粘贴简历文本内容",
+            "验证Agent分析简历结构",
+            "验证返回优化建议"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F004-T003",
+          "name": "技能评分工具调用",
+          "steps": [
+            "提供包含技能列表的简历",
+            "验证evaluateSkills工具被调用",
+            "验证返回技能评分(5-10分)"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F004-T004",
+          "name": "PDF简历上传",
+          "steps": [
+            "上传PDF格式简历文件",
+            "验证文件上传成功",
+            "验证PDF内容被正确提取",
+            "验证Agent分析PDF简历内容"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F005",
+      "name": "模拟面试Agent",
+      "description": "真实的前端技术面试模拟",
+      "category": "agent",
+      "testCases": [
+        {
+          "id": "F005-T001",
+          "name": "开始面试流程",
+          "steps": [
+            "发送：'我想模拟面试'",
+            "验证Agent开始面试并询问基本信息"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F005-T002",
+          "name": "多轮面试问答",
+          "steps": [
+            "回答面试官的问题",
+            "验证Agent提供反馈",
+            "验证Agent继续提问下一题"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F005-T003",
+          "name": "面试结束评价",
+          "steps": [
+            "完成8-10个问题的面试",
+            "验证Agent给出综合评价",
+            "验证包含优势和改进建议"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F006",
+      "name": "文件上传",
+      "description": "支持图片和PDF文件上传",
+      "category": "upload",
+      "testCases": [
+        {
+          "id": "F006-T001",
+          "name": "上传JPEG图片",
+          "steps": [
+            "点击附件按钮",
+            "选择JPEG格式图片",
+            "验证图片预览显示",
+            "发送消息验证图片附带发送"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F006-T002",
+          "name": "上传PNG图片",
+          "steps": [
+            "点击附件按钮",
+            "选择PNG格式图片",
+            "验证图片预览显示",
+            "发送消息验证图片附带发送"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F006-T003",
+          "name": "上传PDF文件",
+          "steps": [
+            "点击附件按钮",
+            "选择PDF格式文件",
+            "验证文件预览显示",
+            "发送消息验证PDF附带发送"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F006-T004",
+          "name": "文件大小限制",
+          "steps": [
+            "尝试上传超过10MB的文件",
+            "验证显示错误提示",
+            "验证文件未被上传"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F006-T005",
+          "name": "文件类型限制",
+          "steps": [
+            "尝试上传不支持的文件类型(如.exe)",
+            "验证显示错误提示",
+            "验证文件未被上传"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F007",
+      "name": "PDF文本提取",
+      "description": "从PDF文件中提取文本内容供AI分析",
+      "category": "pdf",
+      "testCases": [
+        {
+          "id": "F007-T001",
+          "name": "Base64 PDF解析",
+          "steps": [
+            "上传PDF文件",
+            "验证文件转为Base64格式",
+            "验证PDF内容被正确提取"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F007-T002",
+          "name": "多页PDF处理",
+          "steps": [
+            "上传多页PDF文件",
+            "验证所有页面内容被提取",
+            "验证页数信息正确"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F008",
+      "name": "模型切换",
+      "description": "支持多个AI模型提供商",
+      "category": "model",
+      "testCases": [
+        {
+          "id": "F008-T001",
+          "name": "切换到Claude模型",
+          "steps": [
+            "在模型选择器中选择Claude模型",
+            "发送消息",
+            "验证使用Claude模型响应"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F008-T002",
+          "name": "切换到GPT模型",
+          "steps": [
+            "在模型选择器中选择GPT模型",
+            "发送消息",
+            "验证使用GPT模型响应"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F008-T003",
+          "name": "切换到DeepSeek模型",
+          "steps": [
+            "在模型选择器中选择DeepSeek模型",
+            "发送消息",
+            "验证使用DeepSeek模型响应"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F009",
+      "name": "文档工具",
+      "description": "创建和更新文档",
+      "category": "tools",
+      "testCases": [
+        {
+          "id": "F009-T001",
+          "name": "创建文档",
+          "steps": [
+            "请求AI创建一个文档",
+            "验证createDocument工具被调用",
+            "验证文档预览显示"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F009-T002",
+          "name": "更新文档",
+          "steps": [
+            "请求AI修改现有文档",
+            "验证updateDocument工具被调用",
+            "验证文档内容更新"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F010",
+      "name": "主题切换",
+      "description": "支持亮色和暗色主题",
+      "category": "ui",
+      "testCases": [
+        {
+          "id": "F010-T001",
+          "name": "切换到暗色主题",
+          "steps": [
+            "点击主题切换按钮",
+            "选择暗色主题",
+            "验证界面变为暗色"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F010-T002",
+          "name": "切换到亮色主题",
+          "steps": [
+            "点击主题切换按钮",
+            "选择亮色主题",
+            "验证界面变为亮色"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F010-T003",
+          "name": "跟随系统主题",
+          "steps": [
+            "点击主题切换按钮",
+            "选择系统主题",
+            "验证界面跟随系统设置"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F011",
+      "name": "技能评分工具",
+      "description": "evaluateSkills工具评估简历技能",
+      "category": "tools",
+      "testCases": [
+        {
+          "id": "F011-T001",
+          "name": "技能数量评估",
+          "steps": [
+            "提供技能列表和毕业年份",
+            "验证根据工作年限计算期望技能数",
+            "验证技能数量评分正确"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F011-T002",
+          "name": "技能深度评估",
+          "steps": [
+            "提供不同经验级别的技能描述",
+            "验证根据工作年限给出深度建议",
+            "验证评分范围在5-10分"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F011-T003",
+          "name": "弱描述词检测",
+          "steps": [
+            "提供包含'了解'关键词的技能",
+            "验证工具检测到弱描述词",
+            "验证给出改进建议"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F011-T004",
+          "name": "现代技术栈检测",
+          "steps": [
+            "提供包含/不包含现代技术的技能列表",
+            "验证工具正确识别技术栈现代性",
+            "验证给出相应建议"
+          ],
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "id": "F012",
+      "name": "响应式布局",
+      "description": "适配不同屏幕尺寸",
+      "category": "ui",
+      "testCases": [
+        {
+          "id": "F012-T001",
+          "name": "桌面端布局",
+          "steps": [
+            "在1920x1080分辨率查看",
+            "验证侧边栏正常显示",
+            "验证聊天区域布局正确"
+          ],
+          "status": "failed"
+        },
+        {
+          "id": "F012-T002",
+          "name": "移动端布局",
+          "steps": [
+            "在375x667分辨率查看(iPhone SE)",
+            "验证侧边栏可折叠",
+            "验证聊天界面适配移动端"
+          ],
+          "status": "failed"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalFeatures": 12,
+    "totalTestCases": 38,
+    "passed": 0,
+    "failed": 38,
+    "pending": 0
+  }
+}

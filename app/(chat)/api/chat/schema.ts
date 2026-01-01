@@ -5,11 +5,29 @@ const textPartSchema = z.object({
   text: z.string().min(1).max(200000000),
 });
 
+// Custom URL validator that accepts both http(s) URLs and data URLs
+const urlOrDataUrl = z.string().refine(
+  (val) => {
+    // Accept data URLs (base64 encoded files)
+    if (val.startsWith("data:")) {
+      return true;
+    }
+    // Accept http/https URLs
+    try {
+      new URL(val);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  { message: "Invalid URL format" }
+);
+
 const filePartSchema = z.object({
   type: z.enum(["file"]),
   mediaType: z.enum(["image/jpeg", "image/png", "application/pdf"]),
   name: z.string().min(1).max(100),
-  url: z.string().url(),
+  url: urlOrDataUrl,
 });
 
 const partSchema = z.union([textPartSchema, filePartSchema]);
