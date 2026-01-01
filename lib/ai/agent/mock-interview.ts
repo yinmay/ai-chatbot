@@ -166,13 +166,15 @@ export async function executeMockInterviewStream(
     });
   }
 
-  result.consumeStream();
-
+  // Use merge to stream the result - it handles stream consumption
   dataStream.merge(
     result.toUIMessageStream({
       sendReasoning: true,
     })
   );
+
+  // Wait for the stream to complete
+  await result.consumeStream();
 }
 
 /**
@@ -237,13 +239,15 @@ export function mockInterviewAgent(
         });
       }
 
-      result.consumeStream();
-
+      // Use merge to stream the result - it handles stream consumption
       dataStream.merge(
         result.toUIMessageStream({
           sendReasoning: true,
         })
       );
+
+      // Wait for the stream to complete
+      await result.consumeStream();
     },
     generateId: generateUUID,
     onFinish: async ({ messages: finishedMessages }) => {

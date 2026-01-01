@@ -74,13 +74,15 @@ export function createChatStream({
           dataStream,
         });
 
-        result.consumeStream();
-
+        // Use merge to stream the result - it handles stream consumption
         dataStream.merge(
           result.toUIMessageStream({
             sendReasoning: true,
           })
         );
+
+        // Wait for the stream to complete
+        await result.consumeStream();
       }
     },
     generateId: generateUUID,
