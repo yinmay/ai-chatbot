@@ -59,27 +59,30 @@ export function createLangGraphStream({
           `[LangGraph] Intent: ${result.intent}, Confidence: ${result.confidence}`
         );
 
-        // Stream the response
+        // Stream the response as text-delta (simulating streaming)
         if (result.response) {
-          // Write the response as a text part
-          dataStream.write({
-            type: "text",
-            text: result.response,
-          });
+          // Split response into chunks and stream them
+          const chunks = result.response.split(/(?<=\s)/);
+          for (const chunk of chunks) {
+            dataStream.write({
+              type: "text-delta",
+              textDelta: chunk,
+            });
+          }
         }
 
         // If there's reasoning (from deep thinking models), include it
         if (result.reasoning) {
           dataStream.write({
-            type: "reasoning",
-            text: result.reasoning,
+            type: "reasoning-delta",
+            textDelta: result.reasoning,
           });
         }
       } catch (error) {
         console.error("[LangGraph] Error:", error);
         dataStream.write({
-          type: "text",
-          text: "Sorry, an error occurred. Please try again.",
+          type: "text-delta",
+          textDelta: "Sorry, an error occurred. Please try again.",
         });
       }
     },
