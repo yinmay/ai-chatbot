@@ -1,12 +1,12 @@
 import { END, START, StateGraph } from "@langchain/langgraph";
-import { AgentState } from "./state";
 import {
-  classifyNode,
-  resumeOptNode,
-  mockInterviewNode,
   chatNode,
+  classifyNode,
+  mockInterviewNode,
+  resumeOptNode,
   routeByIntent,
 } from "./nodes";
+import { AgentState } from "./state";
 
 /**
  * Build the LangGraph Agent Workflow
@@ -80,5 +80,5 @@ graph TD
 `;
 }
 
-export { AgentState } from "./state";
 export type { AgentStateType, IntentType } from "./state";
+export { AgentState } from "./state";
