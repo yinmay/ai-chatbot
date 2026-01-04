@@ -6,16 +6,30 @@ import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
 import { executeStreamText, handleFinishedMessages } from "./common";
 
-// Re-export user intent classification
-export { classifyUserIntent, userIntentSchema, type UserIntent } from "./classify";
+// Re-export user intent classification (legacy)
+export {
+  classifyUserIntent,
+  type UserIntent,
+  userIntentSchema,
+} from "./classify";
+
 // Import for internal use
 import { classifyUserIntent } from "./classify";
 
+// Re-export mock interview agent
+export { mockInterviewAgent } from "./mock-interview";
 // Re-export resume optimization agent
 export { resumeOptimizationAgent } from "./resume-opt";
 
-// Re-export mock interview agent
-export { mockInterviewAgent } from "./mock-interview";
+// Re-export LangGraph agent
+export {
+  agentGraph,
+  AgentState,
+  INTENT_TYPES,
+  createLangGraphStream,
+  getGraphVisualization,
+} from "./langgraph";
+export type { AgentStateType, IntentType } from "./langgraph";
 
 export type CreateChatStreamOptions = {
   chatId: string;
@@ -27,9 +41,15 @@ export type CreateChatStreamOptions = {
   titlePromise?: Promise<string> | null;
 };
 
+import { executeMockInterviewStream } from "./mock-interview";
 // Import execute functions
 import { executeResumeOptStream } from "./resume-opt";
-import { executeMockInterviewStream } from "./mock-interview";
+
+// LangGraph stream
+import { createLangGraphStream } from "./langgraph";
+
+// Use LangGraph by default, can be toggled with env var
+const USE_LANGGRAPH = process.env.USE_LANGGRAPH !== "false";
 
 /**
  * Creates an AI chat stream with message handling
@@ -57,13 +77,20 @@ export function createChatStream({
     originalMessages: isToolApprovalFlow ? uiMessages : undefined,
     execute: async ({ writer: dataStream }) => {
       // Classify user intent inside the stream execution
-      const userIntent = await classifyUserIntent(uiMessages, selectedChatModel);
+      const userIntent = await classifyUserIntent(
+        uiMessages,
+        selectedChatModel
+      );
 
       // Route to appropriate agent based on intent
       if (userIntent.intent === "resume_opt") {
         await executeResumeOptStream(uiMessages, selectedChatModel, dataStream);
       } else if (userIntent.intent === "mock_interview") {
-        await executeMockInterviewStream(uiMessages, selectedChatModel, dataStream);
+        await executeMockInterviewStream(
+          uiMessages,
+          selectedChatModel,
+          dataStream
+        );
       } else {
         // Use default chat stream for related_topics and others
         const result = await executeStreamText({
