@@ -16,20 +16,19 @@ export {
 // Import for internal use
 import { classifyUserIntent } from "./classify";
 
+export type { AgentStateType, IntentType } from "./langgraph";
+// Re-export LangGraph agent
+export {
+  AgentState,
+  agentGraph,
+  createLangGraphStream,
+  getGraphVisualization,
+  INTENT_TYPES,
+} from "./langgraph";
 // Re-export mock interview agent
 export { mockInterviewAgent } from "./mock-interview";
 // Re-export resume optimization agent
 export { resumeOptimizationAgent } from "./resume-opt";
-
-// Re-export LangGraph agent
-export {
-  agentGraph,
-  AgentState,
-  INTENT_TYPES,
-  createLangGraphStream,
-  getGraphVisualization,
-} from "./langgraph";
-export type { AgentStateType, IntentType } from "./langgraph";
 
 export type CreateChatStreamOptions = {
   chatId: string;
@@ -41,19 +40,25 @@ export type CreateChatStreamOptions = {
   titlePromise?: Promise<string> | null;
 };
 
+// LangGraph stream
+import { createLangGraphStream } from "./langgraph";
 import { executeMockInterviewStream } from "./mock-interview";
 // Import execute functions
 import { executeResumeOptStream } from "./resume-opt";
-
-// LangGraph stream
-import { createLangGraphStream } from "./langgraph";
 
 // Use LangGraph by default, can be toggled with env var
 const USE_LANGGRAPH = process.env.USE_LANGGRAPH !== "false";
 
 /**
  * Creates an AI chat stream with message handling
- * Returns a stream immediately and performs classification inside the stream
+ *
+ * By default uses LangGraph-based agent routing.
+ * Set USE_LANGGRAPH=false to use legacy if/else routing.
+ *
+ * LangGraph Architecture:
+ * - StateGraph with classify -> route -> agent nodes
+ * - Conditional edges based on user intent
+ * - Supports resume_opt, mock_interview, and general chat
  */
 export function createChatStream({
   chatId,
@@ -64,6 +69,23 @@ export function createChatStream({
   isToolApprovalFlow,
   titlePromise,
 }: CreateChatStreamOptions) {
+  // Use LangGraph-based routing by default
+  if (USE_LANGGRAPH) {
+    console.log("[Agent] Using LangGraph-based routing");
+    return createLangGraphStream({
+      chatId,
+      selectedChatModel,
+      requestHints,
+      uiMessages,
+      session,
+      isToolApprovalFlow,
+      titlePromise,
+    });
+  }
+
+  // Legacy routing (fallback)
+  console.log("[Agent] Using legacy if/else routing");
+
   // Handle title generation in parallel
   if (titlePromise) {
     titlePromise.then((title) => {
