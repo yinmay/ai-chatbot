@@ -1,8 +1,7 @@
-import { smoothStream, streamText } from "ai";
-import { createUIMessageStream } from "ai";
+import { createUIMessageStream, smoothStream, streamText } from "ai";
 import type { Session } from "next-auth";
-import { getLanguageModel } from "@/lib/ai/providers";
 import type { RequestHints } from "@/lib/ai/prompts";
+import { getLanguageModel } from "@/lib/ai/providers";
 import { updateChatTitleById } from "@/lib/db/queries";
 import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
