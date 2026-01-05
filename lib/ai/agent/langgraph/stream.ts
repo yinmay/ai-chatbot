@@ -1,7 +1,6 @@
-import { createUIMessageStream, smoothStream, streamText } from "ai";
+import { createUIMessageStream } from "ai";
 import type { Session } from "next-auth";
 import type { RequestHints } from "@/lib/ai/prompts";
-import { getLanguageModel } from "@/lib/ai/providers";
 import { updateChatTitleById } from "@/lib/db/queries";
 import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
@@ -19,15 +18,10 @@ export type CreateLangGraphStreamOptions = {
 };
 
 /**
- * Creates a chat stream using LangGraph agent
+ * Creates a chat stream using LangGraph agent with streamEvents
  *
- * This function integrates the LangGraph state machine with
- * Vercel AI SDK's streaming response format.
- *
- * Flow:
- * 1. Invoke LangGraph with messages and model
- * 2. Get classified intent and routed response
- * 3. Stream response back to client
+ * Uses LangGraph's streamEvents API to get real-time streaming output
+ * from the graph nodes.
  */
 export function createLangGraphStream({
   chatId,
@@ -48,50 +42,87 @@ export function createLangGraphStream({
   const stream = createUIMessageStream({
     originalMessages: isToolApprovalFlow ? uiMessages : undefined,
     execute: async ({ writer: dataStream }) => {
+      const messageId = generateUUID();
+      let currentIntent: string | null = null;
+      let fullResponse = "";
+
       try {
-        // Invoke LangGraph agent
-        const result = await agentGraph.invoke({
-          messages: uiMessages,
-          selectedModel: selectedChatModel,
-        });
-
-        // Log the routing decision for debugging
-        console.log(
-          `[LangGraph] Intent: ${result.intent}, Confidence: ${result.confidence}`
+        // Use streamEvents to get real-time updates from the graph
+        const eventStream = agentGraph.streamEvents(
+          {
+            messages: uiMessages,
+            selectedModel: selectedChatModel,
+          },
+          { version: "v2" }
         );
 
-        const responseText =
-          result.response && typeof result.response === "string"
-            ? result.response
-            : "I'm sorry, I couldn't process your request. Please try again.";
+        for await (const event of eventStream) {
+          // Log events for debugging
+          if (event.event === "on_chain_end" && event.name === "classify") {
+            // Classification completed
+            const output = event.data?.output;
+            if (output?.intent) {
+              currentIntent = output.intent;
+              console.log(
+                `[LangGraph] Intent: ${output.intent}, Confidence: ${output.confidence}`
+              );
+            }
+          }
 
-        // Use streamText with the response as a prompt to create proper stream
-        const streamResult = streamText({
-          model: getLanguageModel(selectedChatModel),
-          prompt: `Respond with exactly this text, do not add anything:\n\n${responseText}`,
-          experimental_transform: smoothStream({ chunking: "word" }),
-        });
+          // Capture LLM streaming tokens
+          if (event.event === "on_llm_stream") {
+            const chunk = event.data?.chunk;
+            if (chunk?.content) {
+              const content =
+                typeof chunk.content === "string"
+                  ? chunk.content
+                  : chunk.content[0]?.text || "";
 
-        // Merge the stream into dataStream
-        dataStream.merge(
-          streamResult.toUIMessageStream({
-            sendReasoning: true,
-          })
-        );
+              if (content) {
+                fullResponse += content;
+                dataStream.write({
+                  type: "text-delta",
+                  textDelta: content,
+                });
+              }
+            }
+          }
 
-        // Wait for stream to complete
-        await streamResult.consumeStream();
+          // Capture final response from agent nodes
+          if (event.event === "on_chain_end") {
+            const nodeName = event.name;
+            if (["resumeOpt", "mockInterview", "chat"].includes(nodeName)) {
+              const output = event.data?.output;
+              if (output?.response && !fullResponse) {
+                // Only use this if we didn't get streaming tokens
+                fullResponse = output.response;
+                // Stream the response word by word
+                const words = output.response.split(/(\s+)/);
+                for (const word of words) {
+                  dataStream.write({
+                    type: "text-delta",
+                    textDelta: word,
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // If no response was captured, send fallback
+        if (!fullResponse) {
+          dataStream.write({
+            type: "text-delta",
+            textDelta:
+              "I'm sorry, I couldn't process your request. Please try again.",
+          });
+        }
       } catch (error) {
-        console.error("[LangGraph] Error:", error);
-
-        // Create error stream
-        const errorResult = streamText({
-          model: getLanguageModel(selectedChatModel),
-          prompt: `Respond with: Sorry, an error occurred: ${error instanceof Error ? error.message : "Unknown error"}`,
+        console.error("[LangGraph] Stream error:", error);
+        dataStream.write({
+          type: "text-delta",
+          textDelta: `Sorry, an error occurred: ${error instanceof Error ? error.message : "Unknown error"}`,
         });
-
-        dataStream.merge(errorResult.toUIMessageStream({}));
-        await errorResult.consumeStream();
       }
     },
     generateId: generateUUID,
