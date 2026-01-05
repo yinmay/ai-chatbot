@@ -236,17 +236,21 @@ Please send your resume content!`,
       };
     }
 
+    console.log("[resumeOptNode] Calling LLM...");
     const result = await llm.invoke(langchainMessages);
+    console.log("[resumeOptNode] LLM response received");
+
     const responseContent =
       typeof result.content === "string"
         ? result.content
         : JSON.stringify(result.content);
 
+    console.log("[resumeOptNode] Response length:", responseContent.length);
     return {
       response: responseContent,
     };
   } catch (error) {
-    console.error("Resume optimization failed:", error);
+    console.error("[resumeOptNode] Error:", error);
     return {
       response:
         "Sorry, an error occurred while processing your resume. Please try again.",
