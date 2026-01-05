@@ -59,50 +59,39 @@ export function createLangGraphStream({
         console.log(
           `[LangGraph] Intent: ${result.intent}, Confidence: ${result.confidence}`
         );
-        console.log(
-          `[LangGraph] Response exists: ${!!result.response}, Type: ${typeof result.response}`
+
+        const responseText =
+          result.response && typeof result.response === "string"
+            ? result.response
+            : "I'm sorry, I couldn't process your request. Please try again.";
+
+        // Use streamText with the response as a prompt to create proper stream
+        const streamResult = streamText({
+          model: getLanguageModel(selectedChatModel),
+          prompt: `Respond with exactly this text, do not add anything:\n\n${responseText}`,
+          experimental_transform: smoothStream({ chunking: "word" }),
+        });
+
+        // Merge the stream into dataStream
+        dataStream.merge(
+          streamResult.toUIMessageStream({
+            sendReasoning: true,
+          })
         );
 
-        const messageId = generateUUID();
-
-        // Stream the response as text-delta (simulating streaming)
-        if (result.response && typeof result.response === "string") {
-          // Split response into chunks and stream them
-          const chunks = result.response.split(/(?<=\s)/);
-          for (const chunk of chunks) {
-            dataStream.write({
-              type: "text-delta",
-              id: messageId,
-              delta: chunk,
-            });
-          }
-        } else {
-          // Fallback message if no response
-          dataStream.write({
-            type: "text-delta",
-            id: messageId,
-            delta:
-              "I'm sorry, I couldn't process your request. Please try again.",
-          });
-        }
-
-        // If there's reasoning (from deep thinking models), include it
-        if (result.reasoning && typeof result.reasoning === "string") {
-          const reasoningId = generateUUID();
-          dataStream.write({
-            type: "reasoning-delta",
-            id: reasoningId,
-            delta: result.reasoning,
-          });
-        }
+        // Wait for stream to complete
+        await streamResult.consumeStream();
       } catch (error) {
         console.error("[LangGraph] Error:", error);
-        const errorId = generateUUID();
-        dataStream.write({
-          type: "text-delta",
-          id: errorId,
-          delta: `Sorry, an error occurred: ${error instanceof Error ? error.message : "Unknown error"}`,
+
+        // Create error stream
+        const errorResult = streamText({
+          model: getLanguageModel(selectedChatModel),
+          prompt: `Respond with: Sorry, an error occurred: ${error instanceof Error ? error.message : "Unknown error"}`,
         });
+
+        dataStream.merge(errorResult.toUIMessageStream({}));
+        await errorResult.consumeStream();
       }
     },
     generateId: generateUUID,
