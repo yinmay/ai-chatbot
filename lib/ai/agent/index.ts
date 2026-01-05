@@ -46,8 +46,9 @@ import { executeMockInterviewStream } from "./mock-interview";
 // Import execute functions
 import { executeResumeOptStream } from "./resume-opt";
 
-// Use LangGraph by default, can be toggled with env var
-const USE_LANGGRAPH = process.env.USE_LANGGRAPH !== "false";
+// LangGraph is opt-in (set USE_LANGGRAPH=true to enable)
+// Default to legacy routing until LangGraph streaming is fully implemented
+const USE_LANGGRAPH = process.env.USE_LANGGRAPH === "true";
 
 /**
  * Creates an AI chat stream with message handling
