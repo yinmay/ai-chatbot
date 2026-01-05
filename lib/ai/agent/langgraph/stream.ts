@@ -1,6 +1,7 @@
-import { createUIMessageStream } from "ai";
+import { createUIMessageStream, smoothStream, streamText } from "ai";
 import type { Session } from "next-auth";
 import type { RequestHints } from "@/lib/ai/prompts";
+import { getLanguageModel } from "@/lib/ai/providers";
 import { updateChatTitleById } from "@/lib/db/queries";
 import type { ChatMessage } from "@/lib/types";
 import { generateUUID } from "@/lib/utils";
@@ -58,7 +59,9 @@ export function createLangGraphStream({
         console.log(
           `[LangGraph] Intent: ${result.intent}, Confidence: ${result.confidence}`
         );
-        console.log(`[LangGraph] Response exists: ${!!result.response}, Type: ${typeof result.response}`);
+        console.log(
+          `[LangGraph] Response exists: ${!!result.response}, Type: ${typeof result.response}`
+        );
 
         const messageId = generateUUID();
 
