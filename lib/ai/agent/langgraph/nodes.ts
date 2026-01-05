@@ -100,7 +100,6 @@ export async function classifyNode(
 
   try {
     const llm = getLLM(selectedModel);
-    const llmWithStructuredOutput = llm.withStructuredOutput(intentSchema);
 
     const systemPrompt = `You are an intent classifier for a career assistant AI.
 
@@ -110,12 +109,31 @@ Classify the user's message into one of these categories:
 - related_topics: Programming, technical interview, or resume preparation related questions (but not the above two)
 - others: Unrelated topics
 
-Return JSON with intent and confidence (0-1).`;
+You MUST respond with ONLY a valid JSON object, no other text:
+{"intent": "category_name", "confidence": 0.95}`;
 
-    const result = await llmWithStructuredOutput.invoke([
+    const result = await llm.invoke([
       new SystemMessage(systemPrompt),
       new HumanMessage(userText),
     ]);
+
+    // Parse the response as JSON
+    const content =
+      typeof result.content === "string"
+        ? result.content
+        : JSON.stringify(result.content);
+
+    // Extract JSON from response (handle markdown code blocks)
+    const jsonMatch = content.match(/\{[\s\S]*"intent"[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        intent: parsed.intent as IntentType,
+        confidence: parsed.confidence ?? 0.8,
+        hasPDF,
+        hasResumeContent,
+      };
+    }
 
     return {
       intent: result.intent as IntentType,
