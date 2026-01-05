@@ -9,7 +9,29 @@ import {
 import { AgentState } from "./state";
 
 /**
- * Build the LangGraph Agent Workflow
+ * Classification-only Graph (for hybrid approach)
+ *
+ * Graph structure:
+ *     START → classify → END
+ *
+ * This graph ONLY does intent classification.
+ * Actual response generation is handled by Vercel AI SDK in stream.ts.
+ */
+const classifyWorkflow = new StateGraph(AgentState)
+  .addNode("classify", classifyNode)
+  .addEdge(START, "classify")
+  .addEdge("classify", END);
+
+/**
+ * Classification Graph (used by stream.ts)
+ *
+ * Returns intent and confidence without generating a response.
+ * Response streaming is handled by Vercel AI SDK.
+ */
+export const agentGraph = classifyWorkflow.compile();
+
+/**
+ * Full Agent Workflow (for reference/future use)
  *
  * Graph structure:
  *
@@ -28,18 +50,14 @@ import { AgentState } from "./state";
  *         ▼
  *        END
  *
- * Flow:
- * 1. Classify user intent (resume_opt, mock_interview, or chat)
- * 2. Route to appropriate agent based on intent
- * 3. Generate response and end
+ * Note: This full graph is available for testing but not used in production.
+ * Production uses the hybrid approach: LangGraph for classification + Vercel AI SDK for streaming.
  */
-const workflow = new StateGraph(AgentState)
-  // Add nodes
+const fullWorkflow = new StateGraph(AgentState)
   .addNode("classify", classifyNode)
   .addNode("resumeOpt", resumeOptNode)
   .addNode("mockInterview", mockInterviewNode)
   .addNode("chat", chatNode)
-  // Define edges
   .addEdge(START, "classify")
   .addConditionalEdges("classify", routeByIntent, [
     "resumeOpt",
@@ -51,18 +69,9 @@ const workflow = new StateGraph(AgentState)
   .addEdge("chat", END);
 
 /**
- * Compiled LangGraph Agent
- *
- * Usage:
- * ```typescript
- * const result = await agentGraph.invoke({
- *   messages: chatMessages,
- *   selectedModel: "deepseek/deepseek-chat",
- * });
- * console.log(result.response);
- * ```
+ * Full Agent Graph (for testing/future use)
  */
-export const agentGraph = workflow.compile();
+export const fullAgentGraph = fullWorkflow.compile();
 
 /**
  * Get the graph visualization (Mermaid diagram)
