@@ -164,6 +164,13 @@ export async function resumeOptNode(
 ): Promise<Partial<AgentStateType>> {
   const { messages, selectedModel, hasPDF, hasResumeContent } = state;
 
+  console.log(
+    "[resumeOptNode] Starting, hasResumeContent:",
+    hasResumeContent,
+    "hasPDF:",
+    hasPDF
+  );
+
   const systemPrompt = `You are an expert resume optimization consultant for software developers, especially frontend developers.
 
 Your expertise:
