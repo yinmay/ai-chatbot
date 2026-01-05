@@ -135,9 +135,10 @@ You MUST respond with ONLY a valid JSON object, no other text:
       };
     }
 
+    // Fallback if JSON parsing fails
     return {
-      intent: result.intent as IntentType,
-      confidence: result.confidence,
+      intent: INTENT_TYPES.RELATED_TOPICS,
+      confidence: 0.5,
       hasPDF,
       hasResumeContent,
     };
