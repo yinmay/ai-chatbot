@@ -20,7 +20,7 @@
  * ```
  */
 
-export { agentGraph, getGraphVisualization } from "./graph";
+export { agentGraph, fullAgentGraph, getGraphVisualization } from "./graph";
 export {
   chatNode,
   classifyNode,
