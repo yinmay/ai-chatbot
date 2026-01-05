@@ -46,9 +46,9 @@ import { executeMockInterviewStream } from "./mock-interview";
 // Import execute functions
 import { executeResumeOptStream } from "./resume-opt";
 
-// LangGraph is opt-in (set USE_LANGGRAPH=true to enable)
-// Default to legacy routing until LangGraph streaming is fully implemented
-const USE_LANGGRAPH = process.env.USE_LANGGRAPH === "true";
+// LangGraph is enabled by default with streamEvents API
+// Set USE_LANGGRAPH=false to use legacy routing
+const USE_LANGGRAPH = process.env.USE_LANGGRAPH !== "false";
 
 /**
  * Creates an AI chat stream with message handling
