@@ -58,6 +58,7 @@ export function createLangGraphStream({
         console.log(
           `[LangGraph] Intent: ${result.intent}, Confidence: ${result.confidence}`
         );
+        console.log(`[LangGraph] Response exists: ${!!result.response}, Type: ${typeof result.response}`);
 
         const messageId = generateUUID();
 
