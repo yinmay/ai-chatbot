@@ -172,7 +172,9 @@ When asked to write, create, or help with something, just do it directly. Don't 
 export async function executeResumeOptStream(
   messages: ChatMessage[],
   selectedChatModel: string,
-  dataStream: Parameters<Parameters<typeof createUIMessageStream>[0]["execute"]>[0]["writer"]
+  dataStream: Parameters<
+    Parameters<typeof createUIMessageStream>[0]["execute"]
+  >[0]["writer"]
 ) {
   // Check if PDF is uploaded - use deep thinking mode for PDF resumes
   const hasPDF = hasPDFAttachment(messages);
@@ -199,10 +201,11 @@ export async function executeResumeOptStream(
         },
         {
           role: "user",
-          content: processedMessages[processedMessages.length - 1]?.parts
-            .filter((part) => part.type === "text")
-            .map((part) => ("text" in part ? part.text : ""))
-            .join(" ") || "",
+          content:
+            processedMessages[processedMessages.length - 1]?.parts
+              .filter((part) => part.type === "text")
+              .map((part) => ("text" in part ? part.text : ""))
+              .join(" ") || "",
         },
       ],
       experimental_transform: smoothStream({ chunking: "word" }),
@@ -310,7 +313,24 @@ export function resumeOptimizationAgent(
       let result;
 
       // If no resume content, prompt user to provide it
-      if (!hasResume) {
+      if (hasResume) {
+        // If has resume content, provide optimization with tools
+        result = streamText({
+          model: getLanguageModel(selectedChatModel) as any,
+          system: RESUME_OPT_PROMPT,
+          messages: messages.map((msg) => ({
+            role: msg.role,
+            content: msg.parts
+              .filter((part) => part.type === "text")
+              .map((part) => ("text" in part ? part.text : ""))
+              .join(" "),
+          })),
+          tools: {
+            evaluateSkills: evaluateSkillsTool,
+          },
+          experimental_transform: smoothStream({ chunking: "word" }),
+        });
+      } else {
         result = streamText({
           model: getLanguageModel(selectedChatModel) as any,
           system: RESUME_OPT_PROMPT,
@@ -326,29 +346,13 @@ export function resumeOptimizationAgent(
             },
             {
               role: "user",
-              content: messages[messages.length - 1]?.parts
-                .filter((part) => part.type === "text")
-                .map((part) => ("text" in part ? part.text : ""))
-                .join(" ") || "",
+              content:
+                messages[messages.length - 1]?.parts
+                  .filter((part) => part.type === "text")
+                  .map((part) => ("text" in part ? part.text : ""))
+                  .join(" ") || "",
             },
           ],
-          experimental_transform: smoothStream({ chunking: "word" }),
-        });
-      } else {
-        // If has resume content, provide optimization with tools
-        result = streamText({
-          model: getLanguageModel(selectedChatModel) as any,
-          system: RESUME_OPT_PROMPT,
-          messages: messages.map((msg) => ({
-            role: msg.role,
-            content: msg.parts
-              .filter((part) => part.type === "text")
-              .map((part) => ("text" in part ? part.text : ""))
-              .join(" "),
-          })),
-          tools: {
-            evaluateSkills: evaluateSkillsTool,
-          },
           experimental_transform: smoothStream({ chunking: "word" }),
         });
       }

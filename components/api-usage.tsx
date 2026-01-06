@@ -23,7 +23,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function ApiUsage({ className }: { className?: string }) {
   const { data, isLoading } = useSWR<UsageData>("/api/usage", fetcher, {
-    refreshInterval: 60000, // Refresh every minute
+    refreshInterval: 60_000, // Refresh every minute
     revalidateOnFocus: true,
   });
 
@@ -79,13 +79,13 @@ export function ApiUsage({ className }: { className?: string }) {
               <span className="font-medium">{percentage}%</span>
             </div>
             <Progress className="h-2" value={percentage} />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {isAtLimit
                 ? "You've reached your daily limit. Try again tomorrow."
                 : `${data.remaining} messages remaining today`}
             </p>
             {data.userType === "guest" && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Sign in for more messages
               </p>
             )}

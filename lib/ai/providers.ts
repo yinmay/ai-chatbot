@@ -1,15 +1,15 @@
+import { createDeepSeek } from "@ai-sdk/deepseek";
 import { gateway } from "@ai-sdk/gateway";
 import {
   customProvider,
   extractReasoningMiddleware,
   wrapLanguageModel,
 } from "ai";
-import { createDeepSeek } from "@ai-sdk/deepseek";
 import { isTestEnvironment } from "../constants";
 
 // DeepSeek provider
 const deepseek = createDeepSeek({
-  apiKey: process.env.DEEPSEEK_API_KEY || '',
+  apiKey: process.env.DEEPSEEK_API_KEY || "",
 });
 
 const THINKING_SUFFIX_REGEX = /-thinking$/;

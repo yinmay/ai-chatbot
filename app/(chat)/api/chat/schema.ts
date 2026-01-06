@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const textPartSchema = z.object({
   type: z.enum(["text"]),
-  text: z.string().min(1).max(200000000),
+  text: z.string().min(1).max(200_000_000),
 });
 
 // Custom URL validator that accepts both http(s) URLs and data URLs

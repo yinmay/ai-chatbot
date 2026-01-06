@@ -33,7 +33,7 @@ export const PreviewAttachment = ({
       ) : isPDF ? (
         <div className="flex size-full flex-col items-center justify-center gap-1 bg-red-50 dark:bg-red-950/30">
           <FileTextIcon className="size-6 text-red-600 dark:text-red-400" />
-          <span className="text-[8px] font-medium text-red-600 dark:text-red-400">
+          <span className="font-medium text-[8px] text-red-600 dark:text-red-400">
             PDF
           </span>
         </div>

@@ -44,9 +44,7 @@ export const evaluateSkillsTool = {
         `建议增加技能数量至 ${expectedSkillCount} 个左右，体现技术广度`
       );
     } else {
-      suggestions.push(
-        `技能数量偏少，建议增加到 ${expectedSkillCount} 个左右`
-      );
+      suggestions.push(`技能数量偏少，建议增加到 ${expectedSkillCount} 个左右`);
     }
 
     // 2. 评估技能深度（基于工作年限）
@@ -71,12 +69,10 @@ export const evaluateSkillsTool = {
         skill.includes("了解") || skill.toLowerCase().includes("understand")
     );
 
-    if (!hasWeakTerms) {
-      score += 0.5;
+    if (hasWeakTerms) {
+      suggestions.push("避免使用'了解xx技术'，改为'熟悉xx技术'或直接删除");
     } else {
-      suggestions.push(
-        "避免使用'了解xx技术'，改为'熟悉xx技术'或直接删除"
-      );
+      score += 0.5;
     }
 
     // 4. 评估技术栈的现代性
@@ -134,10 +130,10 @@ export const evaluateSkillsTool = {
     } else {
       reasons.push("△ 应届生基础分 (+1分)");
     }
-    if (!hasWeakTerms) {
-      reasons.push("✓ 无弱描述词 (+0.5分)");
-    } else {
+    if (hasWeakTerms) {
       reasons.push("✗ 存在弱描述词如'了解' (+0分)");
+    } else {
+      reasons.push("✓ 无弱描述词 (+0.5分)");
     }
     if (hasModernTech) {
       reasons.push("✓ 包含现代技术栈 (+0.5分)");

@@ -121,12 +121,17 @@ function generateResumeTemplate({
       ...baseSkills,
       ...techSpecificSkills[techStack],
       ...advancedSkills,
-    ].slice(0, yearsOfExperience === 0 ? 6 : 8 + Math.min(yearsOfExperience, 4));
+    ].slice(
+      0,
+      yearsOfExperience === 0 ? 6 : 8 + Math.min(yearsOfExperience, 4)
+    );
   };
 
   // 项目经验模板
   const getProjectTemplate = () => {
-    const projectCount = isJunior ? 2 : Math.min(3 + Math.floor(yearsOfExperience / 2), 5);
+    const projectCount = isJunior
+      ? 2
+      : Math.min(3 + Math.floor(yearsOfExperience / 2), 5);
 
     return `## 项目经验
 
@@ -144,7 +149,9 @@ function generateResumeTemplate({
 - 创新点/优化点：[说明有什么创新或优化，最好有量化数据]
 **项目成果**：[量化成果，如：性能提升XX%、用户增长XX、开发效率提升XX等]
 
-${projectCount > 1 ? `### 项目二：[项目名称]
+${
+  projectCount > 1
+    ? `### 项目二：[项目名称]
 **项目时间**：YYYY.MM - YYYY.MM
 **项目简介**：[项目描述]
 **技术栈**：[技术栈]
@@ -152,15 +159,21 @@ ${projectCount > 1 ? `### 项目二：[项目名称]
 - [职责描述1]
 - [职责描述2]
 **项目成果**：[成果]
-` : ''}
-${projectCount > 2 ? `### 项目三：[项目名称]
+`
+    : ""
+}
+${
+  projectCount > 2
+    ? `### 项目三：[项目名称]
 **项目时间**：YYYY.MM - YYYY.MM
 **项目简介**：[项目描述]
 **技术栈**：[技术栈]
 **个人职责**：
 - [职责描述1]
 - [职责描述2]
-` : ''}
+`
+    : ""
+}
 （建议项目数量：${projectCount} 个，按重要性递减排列）`;
   };
 
@@ -192,12 +205,16 @@ ${projectCount > 2 ? `### 项目三：[项目名称]
 - 参与团队技术选型和代码规范制定，推动工程化建设
 ${level === "senior" ? "- 指导初中级工程师，进行技术评审和代码 Review" : ""}
 
-${jobCount > 1 ? `### [公司名称] - ${techStackMap[techStack]}工程师
+${
+  jobCount > 1
+    ? `### [公司名称] - ${techStackMap[techStack]}工程师
 **工作时间**：YYYY.MM - YYYY.MM
 **工作内容**：
 - 负责 [项目/产品] 的前端开发工作
 - 实现 [核心功能描述]，支持日活 XX 万+ 的业务
-` : ''}`;
+`
+    : ""
+}`;
   };
 
   // 完整简历模板
@@ -214,11 +231,13 @@ ${jobCount > 1 ? `### [公司名称] - ${techStackMap[techStack]}工程师
 
 ## 个人简介
 
-${level === "senior"
-  ? `${yearsOfExperience}年前端开发经验，精通 ${techStackMap[techStack]} 技术栈，具备大型项目架构设计和性能优化经验。擅长解决复杂技术问题，有良好的团队协作和技术分享能力。`
-  : level === "mid"
-  ? `${yearsOfExperience}年前端开发经验，熟练掌握 ${techStackMap[techStack]} 及相关生态，有多个完整项目经验。注重代码质量和性能优化，具备良好的学习能力和问题解决能力。`
-  : `热爱前端开发，熟悉 ${techStackMap[techStack]} 技术栈，有扎实的编程基础和快速学习能力。通过实习/项目积累了一定的开发经验，渴望在实际工作中继续成长。`}
+${
+  level === "senior"
+    ? `${yearsOfExperience}年前端开发经验，精通 ${techStackMap[techStack]} 技术栈，具备大型项目架构设计和性能优化经验。擅长解决复杂技术问题，有良好的团队协作和技术分享能力。`
+    : level === "mid"
+      ? `${yearsOfExperience}年前端开发经验，熟练掌握 ${techStackMap[techStack]} 及相关生态，有多个完整项目经验。注重代码质量和性能优化，具备良好的学习能力和问题解决能力。`
+      : `热爱前端开发，熟悉 ${techStackMap[techStack]} 技术栈，有扎实的编程基础和快速学习能力。通过实习/项目积累了一定的开发经验，渴望在实际工作中继续成长。`
+}
 
 ---
 
@@ -232,7 +251,9 @@ ${level !== "junior" ? "**备注**：如果是 985/211/双一流，要突出显�
 
 ## 专业技能
 
-${getSkills().map(skill => `- ${skill}`).join('\n')}
+${getSkills()
+  .map((skill) => `- ${skill}`)
+  .join("\n")}
 
 **注意**：
 - 避免使用"了解xx技术"，改为"熟悉xx技术"或直接删除

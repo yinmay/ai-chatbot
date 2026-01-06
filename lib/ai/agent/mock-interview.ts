@@ -120,7 +120,9 @@ When asked to write, create, or help with something, just do it directly. Don't 
 export async function executeMockInterviewStream(
   messages: ChatMessage[],
   selectedChatModel: string,
-  dataStream: Parameters<Parameters<typeof createUIMessageStream>[0]["execute"]>[0]["writer"]
+  dataStream: Parameters<
+    Parameters<typeof createUIMessageStream>[0]["execute"]
+  >[0]["writer"]
 ) {
   const userMessages = messages.filter((m) => m.role === "user");
   const isFirstMessage = userMessages.length <= 1;
@@ -143,10 +145,11 @@ export async function executeMockInterviewStream(
         },
         {
           role: "user",
-          content: messages[messages.length - 1]?.parts
-            .filter((part) => part.type === "text")
-            .map((part) => ("text" in part ? part.text : ""))
-            .join(" ") || "",
+          content:
+            messages[messages.length - 1]?.parts
+              .filter((part) => part.type === "text")
+              .map((part) => ("text" in part ? part.text : ""))
+              .join(" ") || "",
         },
       ],
       experimental_transform: smoothStream({ chunking: "word" }),
@@ -215,10 +218,11 @@ export function mockInterviewAgent(
             },
             {
               role: "user",
-              content: messages[messages.length - 1]?.parts
-                .filter((part) => part.type === "text")
-                .map((part) => ("text" in part ? part.text : ""))
-                .join(" ") || "",
+              content:
+                messages[messages.length - 1]?.parts
+                  .filter((part) => part.type === "text")
+                  .map((part) => ("text" in part ? part.text : ""))
+                  .join(" ") || "",
             },
           ],
           experimental_transform: smoothStream({ chunking: "word" }),
